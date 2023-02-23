@@ -4,6 +4,8 @@ Disassembly of the original 1990 Castle Master II: The Crypt ZX Spectrum game by
 
 Disassembled by Santiago Ontañón in 2023
 
+This was one of the games built with the classic Freescape 3d engine. It was a very interesting disassembly, and the source code is a very interesting source of routines (polygoin drawing, clipping, math routines, etc.).
+
 Files:
 - castlemaster2-annotated.asm: this is the main disassembly file. It contains my best effort at annotating and commenting the original source code.
 - castlemaster2-original.asm: this is the raw disassembly of the game, with all the code and data areas already identified, but with no comments or annotations.
