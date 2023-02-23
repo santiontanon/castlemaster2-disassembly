@@ -10,4 +10,6 @@ Files:
 - loader-annotated.asm: the game loader disassembly with a few comments and annotations. I used the disassembly capabilities of MDL ( https://github.com/santiontanon/mdlz80optimizer ) for generating this file.
 - loader-original.asm: this is the raw disassembly of the game loader.
 
+You can see an HTML-rendered version of the disassembly, with syntax highlighting, and some visualization of the graphics here: https://braingames.santiontanon.dev/games/disassembly/castlemaster2/castlemaster2-annotated.html
+
 All the symbol names and comments in this file are my own interpretation of the original source code, they could be wrong. So, take them all with a grain of salt! And if you see any errors, please report!
