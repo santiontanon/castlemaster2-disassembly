@@ -67,7 +67,7 @@
 ; - de: byte count
 L04c6_BIOS_CASSETTE_SAVE_NO_BREAK_TEST: equ #04c6
 
-; Saves a collection of bytes to tape
+; Loads a collection of bytes from tape
 ; Input:
 ; - ix: address where to load
 ; - de: byte count
@@ -3343,7 +3343,7 @@ L8bb1_next_face:
 
 
 ; --------------------------------
-; Sets the rendering volume, a cube (to prune which obejcts to render).
+; Sets the rendering volume, a cube (to prune which objects to render).
 L8bb7_determine_rendering_volume:
     ld a, (L6abd_cull_by_rendering_volume_flag)  ; if we are not culling by volume, just return
     or a
@@ -6093,7 +6093,7 @@ L9c2c_return:
 
 
 ; --------------------------------
-; Sorts the projected objects in the order we shoulr render them using bubble sort.
+; Sorts the projected objects in the order we should render them using bubble sort.
 L9c2d_sort_objects_for_rendering:
     ld a, (L746b_n_objects_to_draw)
     push af
@@ -6130,7 +6130,7 @@ L9c45_objects_loop:
                 ld ix, (L5f33_sorting_boundingbox_ptr1)  ; ptr to object 1 bounding box (relative to player)
                 ld iy, (L5f35_sorting_boundingbox_ptr2)  ; ptr to object 2 bounding box (relative to player)
                 ld b, 3
-                ; 3 iterations, one for X, onr for Y, one for Z:
+                ; 3 iterations, one for X, one for Y, one for Z:
                 ; I annotated the coordinates as "x1", "x2" below, but that's only for the first
                 ; iteration, after that it's y1, y2, and then z1, z2.
 L9c66_bounding_box_axis_loop:
@@ -6167,8 +6167,8 @@ L9c9b_one_object_clearly_further_than_the_other:
                 ld a, d
                 and #80  ; keep the sign
                 cp e
-                ; If pbject 1 has a bounding box that covers the 0 coordinate, and does not overlap with the other object,
-                ; it must be clsoer to the player in this axis:
+                ; If object 1 has a bounding box that covers the 0 coordinate, and does not overlap with the other object,
+                ; it must be closer to the player in this axis:
                 jr nz, L9ce6_first_object_is_closer
                 ; Object 1 is completely to one side of the player, not directly in front:
                 ld a, (L5f3d_sorting_bbox2_c2 + 1)
@@ -6177,8 +6177,8 @@ L9c9b_one_object_clearly_further_than_the_other:
                 ld a, (L5f39_sorting_bbox2_c1 + 1)
                 and #80  ; keep the sign
                 cp d
-                ; If pbject 2 has a bounding box that covers the 0 coordinate, and does not overlap with the other object,
-                ; it must be clsoer to the player in this axis:
+                ; If object 2 has a bounding box that covers the 0 coordinate, and does not overlap with the other object,
+                ; it must be closer to the player in this axis:
                 jr nz, L9cec_second_object_is_closer
 
                 ; Object 2 is completely to one side of the player, not directly in front:
@@ -6187,7 +6187,7 @@ L9c9b_one_object_clearly_further_than_the_other:
                 jr nz, L9cf3_objects_incomparable_in_this_axis
 
                 ; Both objects are on the same side of the player:
-                ; Compare their coordinates and check which is closer (taking into acount the sign):
+                ; Compare their coordinates and check which is closer (taking into account the sign):
                 ld de, (L5f37_sorting_bbox1_c1)
                 ld hl, (L5f39_sorting_bbox2_c1)
                 ld a, h
@@ -6245,8 +6245,6 @@ L9cf3_objects_incomparable_in_this_axis:
             cp #22
             jr z, L9d37_next_object
             cp #2a
-
-            ; If we could not make any decision, keep order as is:
             jr z, L9d37_next_object
 
             ; Otherwise, swap objects:
@@ -6294,7 +6292,7 @@ L9d46_render_3d_view:
     or a
     jr z, L9d73_do_not_skip_objects
     ld (L5f3f_n_objects_covering_the_whole_screen_left), a
-    ; When there are obejcts covering the whole screen, there is no point drawing everything that
+    ; When there are objects covering the whole screen, there is no point drawing everything that
     ; is behind them, so, we skip all objects until we reach those:
     ld hl, L6754_current_room_object_projected_data
 L9d56_skip_object_loop:
@@ -6321,7 +6319,8 @@ L9d6e:
 
 L9d73_do_not_skip_objects:
     ; Note: the background (including the skybox) is only drawn when
-    ; there are no objects to skip, which is interesting.
+    ; there are no objects to skip (i.e. no object covers the whole screen). This is because,
+    ; otherwise, it would be a waste of time as the object covering the whole scree would occlude it.
     call La2ff_render_background
     ld hl, L6754_current_room_object_projected_data
 L9d79_objects_loop:
@@ -6571,7 +6570,7 @@ L9edf:
     ld a, b
     jr nz, L9f01_process_key_function
     ; If we want to throw a rock in "movement" mode, we do:
-    ; - first toogle the mode (function 30)
+    ; - first toggle the mode (function 30)
     ; - then throw the rock (function 22)
     ; - tootle mode again (function 30)
     ld a, INPUT_SWITCH_BETWEEN_MOVEMENT_AND_POINTER
@@ -6633,7 +6632,7 @@ L9f4d_prepare_game_stats_for_game_over:
 
 L9f5d_display_game_score_loop:
     ; Loops alternating score, collected keys and spirits destroyed, 
-    ; (flipping between them once per secont), until a key is pressed.
+    ; (flipping between them once per second), until a key is pressed.
     call L9f83_pause_of_exit_with_key
     ld hl, L7d6a_text_score
     call Ld01c_draw_string
