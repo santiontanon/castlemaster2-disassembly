@@ -24,7 +24,8 @@
 ;       wasn't because of the skybox (which would have to rotate if we added "roll").
 ;   - It contains skybox rendering code for outdoor areas (and even a "lightning" animation over the skybox!)
 ;   - It supports textured shapes
-;   - Objects can be lines, triangles, quads or pentagons
+;   - Objects can be lines, triangles, quads or pentagons (in principle arbitrary number of vertices, but the
+;     codebase only contains definitions for up to pentagons).
 ;   - It implements many levels of culling (quick rendering cube, rendering frustum/pyramid)
 ;   - It implements polygon clipping for those that are only partly within the screen
 ;   - Different stages of rendering are "cached" in memory, so that we do not need to repeat them. For example,
@@ -360,7 +361,6 @@ L6a2f_game_init:
 
 ; --------------------------------
 ; Main application loop: calls title screen, starts game, restarts title screen, etc.
-; I think this is a game loop
 L6a7e_main_application_loop:
     ld hl, #fffd
     ld (L746c_game_flags), hl
@@ -385,7 +385,7 @@ L6a99:
 
 ; --------------------------------
 ; Game state variables:
-; Saving game saves data starting from here:
+; Saving a game saves data starting from here:
 L6aad_savegame_data_start:
 L6aad_player_current_x:
     dw #00a0
@@ -436,7 +436,7 @@ L6adb_desired_border_color:
 L6add_desired_attribute_color:
     db #47, #0b
 L6adf_game_boolean_variables:
-    ; One bit corresponding to each variable. 
+    ; One bit corresponding to each boolean variable. 
     ; The first few correspond to collected keys.
     db #00, #00, #00, #00
 L6ae3_visited_areas:  ; one bit per area (keeps track of which areas the player has already visited).
@@ -500,7 +500,7 @@ L6b2b_desired_eye_compass_frame:
 L6b2c_expected_object_size_by_type:
     db #09, #0c, #0e, #0a, #10, #10, #10, #10, #10, #10, #10, #13, #16, #19, #1c, #00
 
-L6b3c_rule_size_by_type:  ; Assuming there are only 49 rule types (maximum type if 48).
+L6b3c_rule_size_by_type:  ; Assuming there are only 49 rule types (maximum type is 48).
     db #01, #04, #02, #02, #02, #02, #03, #03, #03, #02, #02, #03, #02, #02, #03, #02
     db #02, #03, #03, #02, #03, #00, #00, #00, #00, #02, #01, #02, #02, #02, #02, #02
     db #03, #03, #02, #02, #00, #00, #00, #00, #00, #02, #01, #00, #01, #01, #03, #03
@@ -3358,7 +3358,7 @@ L8bc2_clear_memory_loop:
     djnz L8bc2_clear_memory_loop
 
     ; This loop is executed 4 times, each time adjusting the
-    ; pitch/yaw andles up or down by 8 units, and each time,
+    ; pitch/yaw angles up or down by 8 units, and each time,
     ; the values in L745d_rendering_cube_volume are being set: 
     ld h, 4
     ld ix, L745d_rendering_cube_volume
@@ -3806,7 +3806,7 @@ L8e31:
 L8e37:
                     ; If both vertices were within the viewable area, or both outside
                     ; mark this edge as processed:
-                    inc (ix - 1)  ; mark the eedge as processed
+                    inc (ix - 1)  ; mark the edge as processed
                     jr L8e5c_next_edge
 L8e3c_at_least_one_vertex_outside:
                     ; At least one vertex was outside the view frustum, we need to clip:
@@ -3917,7 +3917,7 @@ L8ecf:
             ld a, (ix + 4)  ; y coordinate
             ld (hl), a
             inc hl
-            inc c  ; incremenr number of projected vertices
+            inc c  ; increment number of projected vertices
 L8ed7:
             ; If we had flipped the vertices, put them back in their original order:
             bit 7, (iy)
@@ -4380,14 +4380,14 @@ L915e:
         ld a, SCREEN_HEIGHT_IN_PIXELS / 2
         ld h, (ix + 3)
         ld l, (ix + 2)  ; hl = y
-        ; OPTIMIZATION: multiplication by 96 can be accelerated with a custom routine.
-        ; (a, hl) = 96 * y
+        ; OPTIMIZATION: multiplication by 56 can be accelerated with a custom routine.
+        ; (a, hl) = 56 * y
         call La108_a_times_hl_signed
-        ; (a, hl) = 96 * y / z
+        ; (a, hl) = 56 * y / z
         call La1cc_a_hl_divided_by_de_signed
         ld a, SCREEN_HEIGHT_IN_PIXELS / 2
         add a, l
-        ld b, a  ; screen x = 56 * x / z + 56
+        ld b, a  ; screen y = 56 * y / z + 56
 L9170_return:
     pop af
     pop de
@@ -5508,7 +5508,7 @@ L97ba_return:
 ; --------------------------------
 ; This method is used for synthesizing other solid shapes than cubes, and projecting them.
 ; It works as follows:
-; - First the function determines the obeject type by comparing some of its dimensions.
+; - First the function determines the object type by comparing some of its dimensions.
 ; - Once the type of object is determined, the different vertices of the object are synthesized based on these dimensions.
 ;   - To do this, the code stores the 4 additional dimension data in the object data in (L5f29_extra_solid_dimensions),
 ;     then, via a collection of cases, it uses those to synthesize vertices.
@@ -7816,14 +7816,14 @@ La563_load_and_reset_new_area:
         cp 255
         jr z, La58b
         inc b
-        call La5cc_a_times_64
+        call La5cc_a_times_64_plus_de
         ld (L6aad_player_current_x), hl
 La58b:
         ld a, (ix + OBJECT_Z)
         cp 255
         jr z, La599
         inc b
-        call La5cc_a_times_64
+        call La5cc_a_times_64_plus_de
         ld (L6ab1_player_current_z), hl
 La599:
         ld a, (ix + OBJECT_Y)
@@ -7840,7 +7840,7 @@ La599:
         add a, h
         ld h, a
 La5ae:
-        call La5cd_h_times_64
+        call La5cc_h_times_64_plus_de
         ld (L6aaf_player_current_y), hl
 La5b4:
         ld a, 3
@@ -7866,9 +7866,9 @@ La5c5_done:
 ; - de
 ; output:
 ; - hl = a*64 + de
-La5cc_a_times_64:
+La5cc_a_times_64_plus_de:
     ld h, a
-La5cd_h_times_64:
+La5cc_h_times_64_plus_de:
     ld l, 0
     srl h
     rr l
