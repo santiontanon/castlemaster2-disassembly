@@ -2468,8 +2468,6 @@ L8631_overwrite_vertex2:
 L863c_both_vertices_in_front_of_camera:
     ; Update bit 1 of the frustum checks for the new points:
     ld bc, (L85ac_vertex_frustum_checks)
-    ; BUG? bit "1" was "x - z" check in "L9246_object_visibility_check", but here
-    ;      the code is doing "y - z" instead, which should be bit 2.
     set 1, b
     set 1, c
     ld hl, (L85a0_vertex1_coordinates + 2*2)  ; v1.z
@@ -2562,9 +2560,6 @@ L86dc:
     ld (L85a6_vertex2_coordinates + 2*2), hl
 
 L86e6_both_vertices_pass_frustum_check1:
-    ; BUG? Same as above, I think these are flipped!
-    ;      bit "2" was "y - z" check in "L9246_object_visibility_check", but here
-    ;      the code is doing "x - z" instead, which should be bit 1.
     ld bc, (L85ac_vertex_frustum_checks)
     set 2, b
     set 2, c
@@ -3813,8 +3808,8 @@ L8e3c_at_least_one_vertex_outside:
                     ld a, b
                     or c
                     cp #1f
-                    jr nz, L8e37  ; both vertexes were outside, mark as processed too.
-                    ; One vertex was in, the other was out:
+                    jr nz, L8e37  ; both vertexes failed the same check, no possible intersection with the screen
+                    ; possible intersection with the screen!
                     sla e
                     ld iy, L5e9f_3d_vertex_coordinates_after_rotation_matrix
                     add iy, de
@@ -3992,7 +3987,7 @@ L8f3b_we_already_did_normal_check:
         ld a, (L8ce6_current_face_texture_ID)
         or 4
         ld (ix), a
-        ; Mark that we have objects covering the whols screen:
+        ; Mark that we have objects covering the whole screen:
         ld hl, L7481_n_objects_covering_the_whole_screen
         inc (hl)
         ld hl, (L7497_next_projected_vertex_ptr)
@@ -4219,7 +4214,7 @@ L9060_done:
 ; --------------------------------
 ; Checks a face that has resulted in no projected vertices covers the whole screen.
 ; Note: I am not sure about how the math in this function works, as I have not tried to derive the
-;       interpretration of he calculations. So, I have named this function based on the effect that
+;       interpretration of the calculations. So, I have named this function based on the effect that
 ;       it later has when called.
 ; Input:
 ; - b: number of edges of face
@@ -4573,13 +4568,13 @@ L927d_positive:
             or a
             sbc hl, bc  ; hl = y - z
             jp m, L9286_negative
-            and #1d  ; zero out bit 2
+            and #1d  ; zero out bit 1
 L9286_negative:
         pop hl
         or a
         sbc hl, bc  ; hl = x - z
         jp m, L928f_negative
-        and #1b  ; zero out bit 1
+        and #1b  ; zero out bit 2
 L928f_negative:
         bit 7, b
         jr z, L9295_z_positive
