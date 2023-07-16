@@ -41,8 +41,7 @@
 ; - Sorting of objects for rendering is quite curious, as it happens in coordinates *before* they are projected to
 ;   camera coordinates (just distance from player in each separate axis). I am sure this causes many issues in corner
 ;   cases. 
-; - I think the code has a couple of bugs, I marked them with "BUG?" tags. Of course, I am not 100% sure, but I
-;   think they are bugs.
+; - I think the code has a at least one bug, I marked it with a "BUG?" tag. Of course, I am not 100% sure.
 ; 
 ; Potential optimization of the code:
 ; - The code seems more functional than optimized. The lowest level drawing routines seem to be optimized well, but most
@@ -231,8 +230,8 @@ RULE_TYPE_SHOW_MESSAGE: equ 34
 RULE_TYPE_RENDER_EFFECT: equ 35
 RULE_TYPE_FLIP_SKIP_RULE: equ 44
 RULE_TYPE_UNSET_SKIP_RULE: equ 45
-RULE_TYPE_END_RULE_IF_VARIABLE_LARGER: equ 46
-RULE_TYPE_END_RULE_IF_VARIABLE_LOWER: equ 47
+RULE_TYPE_END_RULE_IF_VARIABLE_LOWER: equ 46
+RULE_TYPE_END_RULE_IF_VARIABLE_LARGER: equ 47
 RULE_TYPE_SELECT_OBJECT: equ 48
 
 
@@ -974,7 +973,7 @@ L74fa_object_under_pointer__current_face:  ; saves the pointer to the current fa
     dw #0c67
 
 L74fc_object_under_pointer__projected_xs_at_pointer_y:
-    db #18  ; number of points in the lsit below
+    db #18  ; number of points in the list below
     db #f5, #c6, #30, #23, #77  ; screen x coordinates of face edges at the y coordinate of the pointer.
                                 ; Used by the "Lb607_find_object_under_pointer" function, to determine
                                 ; which object is under the player pointer.
@@ -2452,18 +2451,16 @@ L85d9:
         bit 0, a
         jr nz, L8631_overwrite_vertex2
         ; Overwrite vertex 1:
-        ; BUG? I think y and z are flipped here and this is wrongly calculated
-        ld (L85a0_vertex1_coordinates + 1*2), hl  ; v1.y = 0
+        ld (L85a0_vertex1_coordinates + 1*2), hl  ; v1.y = v1.z * (v2.y - v1.y) / (v1.z - v2.z) + v1.y
     pop hl
     ld (L85a0_vertex1_coordinates), hl  ; v1.x = v1.z * (v1.x - v2.x) / (v1.z - v2.z) + v1.x
-    ld (L85a0_vertex1_coordinates + 2*2), de  ; v1.z = v1.z * (v2.y - v1.y) / (v1.z - v2.z) + v1.y
+    ld (L85a0_vertex1_coordinates + 2*2), de  ; v1.z = 0
     jr L863c_both_vertices_in_front_of_camera
 L8631_overwrite_vertex2:
-    ; BUG? I think y and z are flipped here and this is wrongly calculated
-    ld (L85a6_vertex2_coordinates + 1*2), hl
+    ld (L85a6_vertex2_coordinates + 1*2), hl  ; v2.y = v1.z * (v2.y - v1.y) / (v1.z - v2.z) + v1.y
     pop hl
     ld (L85a6_vertex2_coordinates), hl
-    ld (L85a6_vertex2_coordinates + 2*2), de
+    ld (L85a6_vertex2_coordinates + 2*2), de  ; v2.z = 0
 
 L863c_both_vertices_in_front_of_camera:
     ; Update bit 1 of the frustum checks for the new points:
@@ -4259,7 +4256,7 @@ L909a:
                 ld iy, L5e9f_3d_vertex_coordinates_after_rotation_matrix
                 add iy, de
                 sla e
-                add iy, de  ; iy += vertex 1 index * 6
+                add iy, de  ; iy += vertex 2 index * 6
                 ld e, (ix + 2)
                 ld d, (ix + 3)  ; de = vertex 1 y
                 ld l, (iy)
@@ -10679,7 +10676,7 @@ Lb704_y_match:
                         ; BUG? This determines collision too fast, as we have only checked "y",
                         ; but "x" has not been checked. It could be a horizontal segment that
                         ; does not intersect with the player pointer!
-                        ; I think the problem is that hirizontal segments imply infinite slope
+                        ; I think the problem is that horizontal segments imply infinite slope
                         ; in the code below, and the programmers did not want to add another
                         ; special case to handle this. So, they added this shortcut, which might
                         ; some times fail.
@@ -11231,9 +11228,9 @@ Lba05:
             jr z, Lba1d
             cp RULE_TYPE_SET_VARIABLE
             jr z, Lba1d
-            cp RULE_TYPE_END_RULE_IF_VARIABLE_LARGER
-            jr z, Lba1d
             cp RULE_TYPE_END_RULE_IF_VARIABLE_LOWER
+            jr z, Lba1d
+            cp RULE_TYPE_END_RULE_IF_VARIABLE_LARGER
             jr nz, Lba5d
 Lba1d:
             ld e, (ix + 1)  ; Variable index
@@ -11277,17 +11274,17 @@ Lba3f:
             jr Lba5a_next_rule
 
 Lba49:
-            cp RULE_TYPE_END_RULE_IF_VARIABLE_LARGER
+            cp RULE_TYPE_END_RULE_IF_VARIABLE_LOWER
             jr nz, Lba53
 
-            ; Rule type 46 (#2e): if variable > value, skip rest of script.
+            ; Rule type 46 (#2e): if variable < value, skip rest of script.
             ld a, e
             cp (hl)
             jr c, Lba5a_next_rule
             jr Lba57_next_rule_skipping
 
 Lba53:
-            ; Rule type 47 (#2f): if variable < value, skip rest of script.
+            ; Rule type 47 (#2f): if variable > value, skip rest of script.
             ld a, (hl)
             cp e
             jr c, Lba5a_next_rule
